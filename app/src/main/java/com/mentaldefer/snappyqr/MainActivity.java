@@ -1,22 +1,18 @@
 package com.mentaldefer.snappyqr;
 
-import static android.util.Log.INFO;
-import static android.util.Log.VERBOSE;
-
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.provider.CalendarContract;
-import android.util.Log;
-import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.Nullable;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
+import com.mentaldefer.snappyqr.databinding.ActivityMainBinding;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -25,24 +21,37 @@ import java.util.Date;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
-    TextView textView;
-    Button button;
+    private static final String QR_CONTENT_KEY = "qrContent";
 
-    private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
-    private static final int QR_SCAN_REQUEST_CODE = 200;
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                    startQRScanActivity();
+                } else {
+                    Toast.makeText(this, "Permission caméra refusée", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+    private final ActivityResultLauncher<Intent> qrScanLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    String qrContent = result.getData().getStringExtra(QR_CONTENT_KEY);
+                    addToCalendar(qrContent);
+                }
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        textView = findViewById(R.id.title_app);
-        button = findViewById(R.id.validez_button);
-        button.setOnClickListener(view -> checkCameraPermission());
+        com.mentaldefer.snappyqr.databinding.ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+
+        binding.validezButton.setOnClickListener(view -> checkCameraPermission());
     }
 
-    protected void checkCameraPermission() {
+    private void checkCameraPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST_CODE);
+            requestPermissionLauncher.launch(Manifest.permission.CAMERA);
         } else {
             startQRScanActivity();
         }
@@ -50,41 +59,27 @@ public class MainActivity extends AppCompatActivity {
 
     private void startQRScanActivity() {
         Intent intent = new Intent(MainActivity.this, QRScanActivity.class);
-        startActivityForResult(intent, QR_SCAN_REQUEST_CODE);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == QR_SCAN_REQUEST_CODE && resultCode == RESULT_OK) {
-            if (data != null) {
-                String qrContent = data.getStringExtra("qrContent");
-                addToCalendar(qrContent);
-            }
-        }
+        qrScanLauncher.launch(intent);
     }
 
     private void addToCalendar(String qrContent) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
-        try{
-                Date date = dateFormat.parse(qrContent);
+        try {
+            Date date = dateFormat.parse(qrContent);
+            if (date != null) {
                 Calendar calendar = Calendar.getInstance();
-                if (date != null) {
-                    String dString = date.toString();
-                    Log.i(String.valueOf(INFO), dString);
-                    calendar.setTime(date);
-                    Intent intent = new Intent(Intent.ACTION_INSERT)
-                            .setData(CalendarContract.Events.CONTENT_URI)
-                            .putExtra(CalendarContract.Events.TITLE,"Evénement QR Code")
-                            .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, calendar.getTimeInMillis())
-                            .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, calendar.getTimeInMillis() + 60 * 60 * 1000)
-                            .putExtra(CalendarContract.Events.ALL_DAY,true)
-                            .putExtra(CalendarContract.Events.EVENT_TIMEZONE,Calendar.getInstance().getTimeZone().getID());
-                    startActivity(intent);
-                }
-
-            }catch (ParseException e) {
-                Toast.makeText(this,"Format de date incorrect dans le code QR",Toast.LENGTH_SHORT).show();
+                calendar.setTime(date);
+                Intent intent = new Intent(Intent.ACTION_INSERT)
+                        .setData(CalendarContract.Events.CONTENT_URI)
+                        .putExtra(CalendarContract.Events.TITLE, "Evénement QR Code")
+                        .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, calendar.getTimeInMillis())
+                        .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, calendar.getTimeInMillis() + 60 * 60 * 1000)
+                        .putExtra(CalendarContract.Events.ALL_DAY, true)
+                        .putExtra(CalendarContract.Events.EVENT_TIMEZONE, Calendar.getInstance().getTimeZone().getID());
+                startActivity(intent);
+            }
+        } catch (ParseException e) {
+            Toast.makeText(this, "Format de date incorrect dans le code QR", Toast.LENGTH_SHORT).show();
         }
     }
 }
