@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.provider.CalendarContract;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -63,9 +64,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addToCalendar(String qrContent) {
+        String dtStart = convertDate(qrContent.substring(6)); // Assuming the date is in the first 10 characters
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         try {
-            Date date = dateFormat.parse(qrContent);
+            assert dtStart != null;
+            Date date = dateFormat.parse(dtStart);
             if (date != null) {
                 Calendar calendar = Calendar.getInstance();
                 calendar.setTime(date);
@@ -80,6 +83,19 @@ public class MainActivity extends AppCompatActivity {
             }
         } catch (ParseException e) {
             Toast.makeText(this, "Format de date incorrect dans le code QR", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private String convertDate(String dtend) {
+        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.getDefault());
+        SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        try {
+            Date date = inputFormat.parse(dtend);
+            assert date != null;
+            return outputFormat.format(date);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }
