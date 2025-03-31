@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addToCalendar(String qrContent) {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         try {
             Date date = dateFormat.parse(qrContent);
             if (date != null) {
