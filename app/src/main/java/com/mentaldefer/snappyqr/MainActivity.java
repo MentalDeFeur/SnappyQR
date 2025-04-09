@@ -47,8 +47,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         com.mentaldefer.snappyqr.databinding.ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-
         binding.validezButton.setOnClickListener(view -> checkCameraPermission());
     }
 
@@ -66,11 +64,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addToCalendar(String qrContent) {
-        Log.i("MESSAGE", qrContent);// Assuming the date is in the first 10 characters
         try {
+            Log.i("MESSAGE", qrContent);
             String[] dt = extractDatesFromQRContent(qrContent);
             String dtStart = dt[0];
             String dtEnd = dt[1];
+            String location = dt[3];
+            String title = dt[2];
+            // Assuming the date format is YYYYMMDD
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
             Date startDate = sdf.parse(dtStart);
             Date endDate = sdf.parse(dtEnd);
@@ -78,7 +79,8 @@ public class MainActivity extends AppCompatActivity {
             assert endDate != null;
             Intent intent = new Intent(Intent.ACTION_INSERT)
                         .setData(CalendarContract.Events.CONTENT_URI)
-                        .putExtra(CalendarContract.Events.TITLE, "Evénement QR Code")
+                        .putExtra(CalendarContract.Events.TITLE, title)
+                        .putExtra(CalendarContract.Events.EVENT_LOCATION,location)
                         .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, startDate.getTime())
                         .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endDate.getTime())
                         .putExtra(CalendarContract.Events.ALL_DAY, true)
@@ -92,10 +94,15 @@ public class MainActivity extends AppCompatActivity {
     private String[] extractDatesFromQRContent(String qrContent) {
         String dtStart = null;
         String dtEnd = null;
+        String title = null;
+        String location = null;
 
         // Regex pour extraire DTSTART et DTEND
         String dtStartRegex = "DTSTART:(\\d+)";
         String dtEndRegex = "DTEND:(\\d+)";
+        String summaryEndRegex = "SUMMARY:(\\D+)";
+        String locationEndRegex = "LOCATION:(\\D+)";
+
 
         // Recherche DTSTART
         java.util.regex.Pattern patternStart = java.util.regex.Pattern.compile(dtStartRegex);
@@ -111,12 +118,29 @@ public class MainActivity extends AppCompatActivity {
             dtEnd = matcherEnd.group(1);
         }
 
-        String[] dt = new String[2];
+        // Recherche TTILE
+        java.util.regex.Pattern patternSummary = java.util.regex.Pattern.compile(summaryEndRegex);
+        java.util.regex.Matcher matcherSummary = patternSummary.matcher(qrContent);
+        if (matcherSummary.find()) {
+            title = matcherSummary.group(1);
+        }
+
+        // Recherche LOCATION
+        java.util.regex.Pattern patternLocation = java.util.regex.Pattern.compile(locationEndRegex);
+        java.util.regex.Matcher matcherLocation = patternLocation.matcher(qrContent);
+        if (matcherLocation.find()) {
+            location = matcherLocation.group(1);
+        }
+
+        String[] dt = new String[5];
         dt[0] = dtStart;
         dt[1] = dtEnd;
+        dt[2] = title;
+        dt[3] = location;
+        dt[4] = qrContent;
 
         // Affichage des résultats
-        Log.i("EXTRACTION", "DTSTART: " + dtStart + ", DTEND: " + dtEnd);
+        Log.i("EXTRACTION", "DTSTART: " + dtStart + ", DTEND: " + dtEnd + ", TITLE: " + title + ", LOCATION: " + location);
         // Conversion des dates
         return dt;
     }
