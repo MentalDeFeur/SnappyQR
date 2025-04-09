@@ -2,6 +2,7 @@ package com.mentaldefer.snappyqr;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.provider.CalendarContract;
@@ -46,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         com.mentaldefer.snappyqr.databinding.ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
         binding.validezButton.setOnClickListener(view -> checkCameraPermission());
     }
@@ -64,38 +66,58 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addToCalendar(String qrContent) {
-        String dtStart = convertDate(qrContent.substring(6)); // Assuming the date is in the first 10 characters
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        Log.i("MESSAGE", qrContent);// Assuming the date is in the first 10 characters
         try {
-            assert dtStart != null;
-            Date date = dateFormat.parse(dtStart);
-            if (date != null) {
-                Calendar calendar = Calendar.getInstance();
-                calendar.setTime(date);
-                Intent intent = new Intent(Intent.ACTION_INSERT)
+            String[] dt = extractDatesFromQRContent(qrContent);
+            String dtStart = dt[0];
+            String dtEnd = dt[1];
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
+            Date startDate = sdf.parse(dtStart);
+            Date endDate = sdf.parse(dtEnd);
+            assert startDate != null;
+            assert endDate != null;
+            Intent intent = new Intent(Intent.ACTION_INSERT)
                         .setData(CalendarContract.Events.CONTENT_URI)
                         .putExtra(CalendarContract.Events.TITLE, "Evénement QR Code")
-                        .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, calendar.getTimeInMillis())
-                        .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, calendar.getTimeInMillis() + 60 * 60 * 1000)
+                        .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, startDate.getTime())
+                        .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endDate.getTime())
                         .putExtra(CalendarContract.Events.ALL_DAY, true)
                         .putExtra(CalendarContract.Events.EVENT_TIMEZONE, Calendar.getInstance().getTimeZone().getID());
                 startActivity(intent);
-            }
         } catch (ParseException e) {
             Toast.makeText(this, "Format de date incorrect dans le code QR", Toast.LENGTH_SHORT).show();
         }
     }
 
-    private String convertDate(String dtend) {
-        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.getDefault());
-        SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        try {
-            Date date = inputFormat.parse(dtend);
-            assert date != null;
-            return outputFormat.format(date);
-        } catch (ParseException e) {
-            e.printStackTrace();
-            return null;
+    private String[] extractDatesFromQRContent(String qrContent) {
+        String dtStart = null;
+        String dtEnd = null;
+
+        // Regex pour extraire DTSTART et DTEND
+        String dtStartRegex = "DTSTART:(\\d+)";
+        String dtEndRegex = "DTEND:(\\d+)";
+
+        // Recherche DTSTART
+        java.util.regex.Pattern patternStart = java.util.regex.Pattern.compile(dtStartRegex);
+        java.util.regex.Matcher matcherStart = patternStart.matcher(qrContent);
+        if (matcherStart.find()) {
+            dtStart = matcherStart.group(1);
         }
+
+        // Recherche DTEND
+        java.util.regex.Pattern patternEnd = java.util.regex.Pattern.compile(dtEndRegex);
+        java.util.regex.Matcher matcherEnd = patternEnd.matcher(qrContent);
+        if (matcherEnd.find()) {
+            dtEnd = matcherEnd.group(1);
+        }
+
+        String[] dt = new String[2];
+        dt[0] = dtStart;
+        dt[1] = dtEnd;
+
+        // Affichage des résultats
+        Log.i("EXTRACTION", "DTSTART: " + dtStart + ", DTEND: " + dtEnd);
+        // Conversion des dates
+        return dt;
     }
 }
