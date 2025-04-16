@@ -21,6 +21,8 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
     private static final String QR_CONTENT_KEY = "qrContent";
@@ -68,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
             Log.i("MESSAGE", qrContent);
             String[] dt = extractDatesFromQRContent(qrContent);
             String dtStart = dt[0];
+            Log.i("DTSTART",dtStart);
             String dtEnd = dt[1];
             String location = dt[3];
             String title = dt[2];
@@ -100,36 +103,32 @@ public class MainActivity extends AppCompatActivity {
         // Regex pour extraire DTSTART et DTEND
         String dtStartRegex = "DTSTART:(\\d+)";
         String dtEndRegex = "DTEND:(\\d+)";
-        String summaryEndRegex = "SUMMARY:(\\D+)";
-        String locationEndRegex = "LOCATION:(\\D+)";
+        String summaryRegex = "SUMMARY:(\\D+)";
+        String locationRegex = "LOCATION:([^;]+)";
 
+        // Création des objets Pattern
+        Pattern dtStartPattern = Pattern.compile(dtStartRegex);
+        Pattern dtEndPattern = Pattern.compile(dtEndRegex);
+        Pattern summaryPattern = Pattern.compile(summaryRegex);
+        Pattern locationPattern = Pattern.compile(locationRegex);
 
-        // Recherche DTSTART
-        java.util.regex.Pattern patternStart = java.util.regex.Pattern.compile(dtStartRegex);
-        java.util.regex.Matcher matcherStart = patternStart.matcher(qrContent);
-        if (matcherStart.find()) {
-            dtStart = matcherStart.group(1);
+        Matcher dtStartMatcher = dtStartPattern.matcher(qrContent);
+        Matcher dtEndMatcher = dtEndPattern.matcher(qrContent);
+        Matcher summaryMatcher = summaryPattern.matcher(qrContent);
+        Matcher locationMatcher = locationPattern.matcher(qrContent);
+
+        // Extraction des informations
+        if (dtStartMatcher.find()) {
+            dtStart = dtStartMatcher.group(1);
         }
-
-        // Recherche DTEND
-        java.util.regex.Pattern patternEnd = java.util.regex.Pattern.compile(dtEndRegex);
-        java.util.regex.Matcher matcherEnd = patternEnd.matcher(qrContent);
-        if (matcherEnd.find()) {
-            dtEnd = matcherEnd.group(1);
+        if (dtEndMatcher.find()) {
+            dtEnd = dtEndMatcher.group(1);
         }
-
-        // Recherche TTILE
-        java.util.regex.Pattern patternSummary = java.util.regex.Pattern.compile(summaryEndRegex);
-        java.util.regex.Matcher matcherSummary = patternSummary.matcher(qrContent);
-        if (matcherSummary.find()) {
-            title = matcherSummary.group(1);
+        if (summaryMatcher.find()) {
+            title = summaryMatcher.group(1);
         }
-
-        // Recherche LOCATION
-        java.util.regex.Pattern patternLocation = java.util.regex.Pattern.compile(locationEndRegex);
-        java.util.regex.Matcher matcherLocation = patternLocation.matcher(qrContent);
-        if (matcherLocation.find()) {
-            location = matcherLocation.group(1);
+        if (locationMatcher.find()) {
+            location = locationMatcher.group(1);
         }
 
         String[] dt = new String[5];
