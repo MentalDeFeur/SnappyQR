@@ -68,12 +68,40 @@ public class MainActivity extends AppCompatActivity {
     private void addToCalendar(String qrContent) {
         try {
             Log.i("MESSAGE", qrContent);
-            String[] dt = extractDatesFromQRContent(qrContent);
-            String dtStart = dt[0];
-            Log.i("DTSTART",dtStart);
-            String dtEnd = dt[1];
-            String location = dt[3];
-            String title = dt[2];
+
+            String dtStart = null;
+            String dtEnd = null;
+            String title = null;
+            String location = null;
+
+            // Regex pour extraire DTSTART, DTEND, SUMMARY et LOCATION
+            String dtStartRegex = "DTSTART:(\\d+)";
+            String dtEndRegex = "DTEND:(\\d+)";
+            String summaryRegex = "SUMMARY:([^;]+)"; // Modifié pour gérer les résumés avec des caractères non-point-virgule
+            String locationRegex = "LOCATION:([^;]+)";
+
+            Pattern dtStartPattern = Pattern.compile(dtStartRegex);
+            Pattern dtEndPattern = Pattern.compile(dtEndRegex);
+            Pattern summaryPattern = Pattern.compile(summaryRegex);
+            Pattern locationPattern = Pattern.compile(locationRegex);
+
+            Matcher dtStartMatcher = dtStartPattern.matcher(qrContent);
+            Matcher dtEndMatcher = dtEndPattern.matcher(qrContent);
+            Matcher summaryMatcher = summaryPattern.matcher(qrContent);
+            Matcher locationMatcher = locationPattern.matcher(qrContent);
+
+            if (dtStartMatcher.find() && dtEndMatcher.find() && summaryMatcher.find() && locationMatcher.find()) {
+                dtStart = dtStartMatcher.group(1);
+                dtEnd = dtEndMatcher.group(1);
+                title = summaryMatcher.group(1);
+                location = locationMatcher.group(1);
+            } else {
+                Toast.makeText(this, "Format de code QR incorrect", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Log.i("EXTRACTION", "DTSTART: " + dtStart + ", DTEND: " + dtEnd + ", TITLE: " + title + ", LOCATION: " + location);
+
             // Assuming the date format is YYYYMMDD
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd", Locale.getDefault());
             Date startDate = sdf.parse(dtStart);
@@ -92,55 +120,5 @@ public class MainActivity extends AppCompatActivity {
         } catch (ParseException e) {
             Toast.makeText(this, "Format de date incorrect dans le code QR", Toast.LENGTH_SHORT).show();
         }
-    }
-
-    private String[] extractDatesFromQRContent(String qrContent) {
-        String dtStart = null;
-        String dtEnd = null;
-        String title = null;
-        String location = null;
-
-        // Regex pour extraire DTSTART et DTEND
-        String dtStartRegex = "DTSTART:(\\d+)";
-        String dtEndRegex = "DTEND:(\\d+)";
-        String summaryRegex = "SUMMARY:(\\D+)";
-        String locationRegex = "LOCATION:([^;]+)";
-
-        // Création des objets Pattern
-        Pattern dtStartPattern = Pattern.compile(dtStartRegex);
-        Pattern dtEndPattern = Pattern.compile(dtEndRegex);
-        Pattern summaryPattern = Pattern.compile(summaryRegex);
-        Pattern locationPattern = Pattern.compile(locationRegex);
-
-        Matcher dtStartMatcher = dtStartPattern.matcher(qrContent);
-        Matcher dtEndMatcher = dtEndPattern.matcher(qrContent);
-        Matcher summaryMatcher = summaryPattern.matcher(qrContent);
-        Matcher locationMatcher = locationPattern.matcher(qrContent);
-
-        // Extraction des informations
-        if (dtStartMatcher.find()) {
-            dtStart = dtStartMatcher.group(1);
-        }
-        if (dtEndMatcher.find()) {
-            dtEnd = dtEndMatcher.group(1);
-        }
-        if (summaryMatcher.find()) {
-            title = summaryMatcher.group(1);
-        }
-        if (locationMatcher.find()) {
-            location = locationMatcher.group(1);
-        }
-
-        String[] dt = new String[5];
-        dt[0] = dtStart;
-        dt[1] = dtEnd;
-        dt[2] = title;
-        dt[3] = location;
-        dt[4] = qrContent;
-
-        // Affichage des résultats
-        Log.i("EXTRACTION", "DTSTART: " + dtStart + ", DTEND: " + dtEnd + ", TITLE: " + title + ", LOCATION: " + location);
-        // Conversion des dates
-        return dt;
     }
 }
