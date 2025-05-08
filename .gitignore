@@ -1,0 +1,46 @@
+# Fichiers et dossiers générés par Android Studio
+/.idea/
+/.gradle/
+/build/
+/captures/
+/.externalNativeBuild/
+
+# Fichiers de configuration spécifiques à l'utilisateur
+/local.properties
+/.vscode/
+
+# Fichiers de logs
+*.log
+
+# Fichiers de compilation
+*.class
+*.dex
+
+# Fichiers de sauvegarde
+*.iml
+*.hprof
+
+# Clés et certificats
+*.jks
+*.keystore
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Fichiers de cache
+*.apk
+*.ap_
+*.cxx/*.iml
+.gradle
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
